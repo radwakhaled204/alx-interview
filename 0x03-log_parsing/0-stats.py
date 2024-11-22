@@ -1,58 +1,47 @@
 #!/usr/bin/python3
-
-
 """
-This module holds a simple module to do log
-parsing. Given a input of log files, extract some
-usefull information and print it to standard output
+Module that parses a log and prints stats to stdout
 """
+from sys import stdin
 
-import sys
-import re
-def check_log_format(log_string):
-    regex_pattern = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} - \[.*\] "GET \/projects\/260 HTTP\/1\.1" \d{3} \d+'
-    return re.match(regex_pattern, log_string)
+status_codes = {
+    "200": 0,
+    "301": 0,
+    "400": 0,
+    "401": 0,
+    "403": 0,
+    "404": 0,
+    "405": 0,
+    "500": 0
+}
 
-
-def print_to_stdout(**kwargs):
-    """
-    A simple helper function to print
-    the values to standard output
-    """
-    for key in kwargs.keys():
-        if not isinstance(kwargs.get(key), dict):
-            # Means this is not a dictionary of dictionaries
-            # So Its the file size
-            print("File Size {}".format(kwargs.get(key)))
-        else:
-            for nested_k, nested_v in key.items():
-                print(f"{nested_k}: {nested_v}")
+size = 0
 
 
-def read_and_analyze_log_files():
-    while True:
-        try:
-            status_codes = {
-                "200": 0,
-                "301": 0,
-                "400": 0,
-                "401": 0,
-                "403": 0,
-                "404": 0,
-                "405": 0,
-                "500": 0
+def print_stats():
+    """Prints the accumulated logs"""
+    print("File size: {}".format(size))
+    for status in sorted(status_codes.keys()):
+        if status_codes[status]:
+            print("{}: {}".format(status, status_codes[status]))
 
-            }
-            total_size = 0
-            for time in range(11):
-                log_info = input("").strip()
-                if check_log_format(log_info):
-                    log_info_list = log_info.split(" ")
-                    f_size = log_info_list[-1]
-                    s_code = log_info_list[-2]
-                    status_codes[s_code] = status_codes.get(s_code) + 1
-                    total_size += int(f_size)
-                    sorted_keys_dict = {code: status_codes[code] for code in sorted(status_codes)}
-            print_to_stdout(codes=sorted_keys_dict, size = total_size)
-        except KeyboardInterrupt:
-            print_to_stdout(codes=sorted_keys_dict, size = total_size)
+
+if __name__ == "__main__":
+    count = 0
+    try:
+        for line in stdin:
+            try:
+                items = line.split()
+                size += int(items[-1])
+                if items[-2] in status_codes:
+                    status_codes[items[-2]] += 1
+            except:
+                pass
+            if count == 9:
+                print_stats()
+                count = -1
+            count += 1
+    except KeyboardInterrupt:
+        print_stats()
+        raise
+    print_stats()
